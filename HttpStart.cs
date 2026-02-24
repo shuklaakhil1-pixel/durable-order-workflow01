@@ -1,11 +1,12 @@
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask.Client;
-using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 public class HttpStart
 {
     [Function("HttpStart")]
-    public async Task<IActionResult> Run(
+    public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client)
     {
@@ -14,9 +15,9 @@ public class HttpStart
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
             "OrderOrchestrator", order);
 
-        return new OkObjectResult(new
-        {
-            InstanceId = instanceId
-        });
+        var response = req.CreateResponse(HttpStatusCode.Accepted);
+        await response.WriteStringAsync($"Started orchestration with ID = '{instanceId}'.");
+
+        return response;
     }
 }
